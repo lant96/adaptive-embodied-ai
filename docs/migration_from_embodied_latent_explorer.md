@@ -1,0 +1,1 @@
+The initial prototype explored embodied navigation using MediaPipe and Three.js. The current project extends this idea by shifting the focus from gesture recognition toward adaptive human-centered interaction models.
