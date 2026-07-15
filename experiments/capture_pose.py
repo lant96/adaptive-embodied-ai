@@ -1,78 +1,36 @@
-"""
-Simple pose capture experiment.
-
-Purpose:
-Test the acquisition pipeline.
-
-Camera
-    ↓
-MediaPipe
-    ↓
-Pose landmarks
-"""
+from adaptive_embodied_ai.acquisition.camera import Camera
+from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
 
 import cv2
 
-from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
 
+camera = Camera()
 
-def main():
+tracker = PoseTracker()
 
-    tracker = PoseTracker()
+while True:
 
-    camera = cv2.VideoCapture(0)
+    frame = camera.read()
 
-    if not camera.isOpened():
-        raise RuntimeError(
-            "Could not open camera"
+    if frame is None:
+        break
+
+    result = tracker.detect(frame)
+
+    if result.pose_landmarks:
+
+        print(
+            len(result.pose_landmarks[0])
         )
 
-    print("Camera started")
+    cv2.imshow(
+        "Adaptive Embodied AI",
+        frame,
+    )
 
-    while True:
+    if cv2.waitKey(1) == 27:
+        break
 
-        success, frame = camera.read()
+camera.release()
 
-        if not success:
-            continue
-
-
-        result = tracker.process(frame)
-
-        landmarks = tracker.extract_landmarks(
-            result
-        )
-
-
-        if landmarks:
-
-            print(
-                f"Pose detected: "
-                f"{len(landmarks)} landmarks"
-            )
-
-        else:
-
-            print(
-                "No pose detected"
-            )
-
-
-        cv2.imshow(
-            "Adaptive Embodied AI - Pose Capture",
-            frame
-        )
-
-
-        key = cv2.waitKey(1)
-
-        if key == 27:  # ESC
-            break
-
-
-    camera.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()
+cv2.destroyAllWindows()
