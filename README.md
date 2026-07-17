@@ -1,69 +1,105 @@
 # Adaptive Embodied AI
 
-Most gesture interfaces assume everyone moves the same way. They don't.
+Adaptive Embodied AI is a research project exploring personalized movement-based interaction. Rather than relying on fixed gesture models, the system learns how an individual user controls an interaction space and adapts accordingly.
 
-This project explores the opposite: a system that learns *your* movement patterns and adapts to you, rather than forcing you to conform to a generic model.
+**Research Question**
 
-## What if personalisation happened at the system level instead of asking users to adapt?
+> Can an AI system learn how an individual controls an interaction space, adapting to the user instead of forcing the user to adapt to the system?
 
-For people with different motor abilities, different movement habits, or just different bodies, a one-size-fits-all gesture interface isn't helpful—it's a wall. If the system learned how *you* naturally control space, interaction becomes accessible by design, not as an afterthought.
+---
 
-There's something deeper here too: your movement signature is information. Individual differences should be features, not bugs.
+## Overview
 
-## What I'm Building
+Most gesture-based interfaces assume that people move in similar ways. In practice, movement patterns differ considerably between individuals due to physiology, habits, experience, and motor abilities.
 
-A real-time system that:
-- Captures movement via webcam (no special hardware needed)
-- Extracts pose features using MediaPipe
-- Learns your personal movement patterns
-- Compares personalised vs. generic models to measure the adaptation benefit
+This project investigates whether interaction systems can learn these individual characteristics and build personalized movement models that improve usability while reducing the need for predefined interaction rules.
 
-**Current phase:** Solid movement capture and exploratory analysis. The personalisation layer comes next—that's where the real learning happens.
+The long-term goal is to develop adaptive embodied interfaces that continuously learn from user behaviour instead of relying on generic interaction models.
 
-## How It Works
+---
 
-Here's the signal flow:
+## Current Status
+
+### Phase 1 — Movement Capture (Complete)
+
+- Webcam acquisition using OpenCV
+- Real-time pose estimation with MediaPipe
+- Feature extraction from upper-body movement
+- Movement recording pipeline
+
+### Phase 2 — Movement Analysis (In Progress)
+
+- Exploratory data analysis
+- Baseline movement modelling
+- Feature evaluation
+
+### Phase 3 — Personalized Adaptation (Planned)
+
+- User-specific movement models
+- Generic versus personalized model comparison
+- Quantitative evaluation of interaction performance
+
+---
+
+## Project Structure
+
 ```
-Webcam → MediaPipe pose landmarks → Feature extraction 
-→ Movement dataset → Analysis & adaptive models
+src/adaptive_embodied_ai/
+├── acquisition/          # Camera and pose estimation
+├── representation/       # Movement feature extraction
+└── utils/
+
+experiments/              # Recording and training scripts
+notebooks/                # Analysis and visualization
+data/movement/            # Recorded sessions
 ```
 
-I chose pose landmarks over raw video intentionally: they're stable, they reduce noise, and they skip straight to what matters—how your body moves through space. Torso movement tells me more about navigation intent than finger flutter ever will.
+---
 
-**Why this approach:**
-- Accessible: runs on any webcam, no depth sensors required
-- Focused: extracts just the features that matter for understanding *your* style
-- Testable: I can compare what a model learns about you vs. a generic user
+## Tech Stack
 
-## What This Taught Me
+- Python
+- OpenCV
+- MediaPipe
+- NumPy
+- Pandas
+- scikit-learn
+- PyTorch (planned)
 
-Building this forced me to think carefully about **what data actually reveals about movement**. It's not just coordinates—it's consistency, compensation patterns, individual quirks. Most accessible design fails because it's built on assumptions about "normal" movement, not on actual human variation.
+---
 
-The other realisation: capturing variation is hard. You need enough data to find patterns, but also enough structure to extract meaning. That tension shaped everything.
-
-## Try It
+## Getting Started
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e .
+```
 
+Record a movement session:
+
+```bash
 python experiments/record_movement.py
 ```
 
-Press `ESC` when done. Data is saved to `data/movement/`.
+Press `ESC` to stop recording. Data will be stored in `data/movement/`.
 
-## Code
+---
 
-```
-src/adaptive_embodied_ai/
-├── acquisition/       — Pose capture & webcam handling
-├── representation/    — Feature extraction & normalization
-└── utils/
+## Future Work
 
-experiments/          — Movement recording scripts
-notebooks/           — Exploratory analysis & visualization
-data/movement/       — Your recorded sessions
-```
+- Train personalized movement models
+- Compare personalized and generic interaction strategies
+- Evaluate adaptation across multiple users
+- Investigate accessibility-oriented interaction
+- Explore online learning for continuous personalization
 
-**Stack:** Python · OpenCV · MediaPipe · NumPy, Pandas · PyTorch (coming next)
+---
+
+## Author
+
+Athanasia Lantouri
+
+Applied Machine Learning | Human-Centered AI | Interactive Systems
+
+GitHub: https://github.com/lant96
