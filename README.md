@@ -1,6 +1,6 @@
 # Adaptive Embodied AI
 
-Adaptive Embodied AI is a research project exploring personalized movement-based interaction. Rather than relying on fixed gesture models, the system learns how an individual user controls an interaction space and adapts accordingly.
+Adaptive Embodied AI is a research project exploring personalised movement-based interaction. Rather than relying on fixed gesture models, the system learns how an individual user controls an interaction space and adapts accordingly.
 
 **Research Question**
 
@@ -12,7 +12,7 @@ Adaptive Embodied AI is a research project exploring personalized movement-based
 
 Most gesture-based interfaces assume that people move in similar ways. In practice, movement patterns differ considerably between individuals due to physiology, habits, experience, and motor abilities.
 
-This project investigates whether interaction systems can learn these individual characteristics and build personalized movement models that improve usability while reducing the need for predefined interaction rules.
+This project investigates whether interaction systems can learn these individual characteristics and build personalised movement models that improve usability while reducing the need for predefined interaction rules.
 
 The long-term goal is to develop adaptive embodied interfaces that continuously learn from user behaviour instead of relying on generic interaction models.
 
@@ -33,10 +33,10 @@ The long-term goal is to develop adaptive embodied interfaces that continuously 
 - Baseline movement modelling
 - Feature evaluation
 
-### Phase 3 — Personalized Adaptation (Planned)
+### Phase 3 — Personalised Adaptation (Planned)
 
 - User-specific movement models
-- Generic versus personalized model comparison
+- Generic versus personalised model comparison
 - Quantitative evaluation of interaction performance
 
 ---
@@ -50,7 +50,7 @@ src/adaptive_embodied_ai/
 └── utils/
 
 experiments/              # Recording and training scripts
-notebooks/                # Analysis and visualization
+notebooks/                # Analysis and visualisation
 data/movement/            # Recorded sessions
 ```
 
@@ -88,11 +88,11 @@ Press `ESC` to stop recording. Data will be stored in `data/movement/`.
 
 ## Future Work
 
-- Train personalized movement models
-- Compare personalized and generic interaction strategies
+- Train personalised movement models
+- Compare personalised and generic interaction strategies
 - Evaluate adaptation across multiple users
 - Investigate accessibility-oriented interaction
-- Explore online learning for continuous personalization
+- Explore online learning for continuous personalisation
 
 ---
 
