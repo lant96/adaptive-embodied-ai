@@ -1,84 +1,69 @@
 # Adaptive Embodied AI
-Personalized embodied navigation through human movement.
-
-**Research Question:** Can an AI system learn how an individual controls an interaction space, adapting instead of forcing users to conform?
-
----
-
-## The Idea
 
 Most gesture interfaces assume everyone moves the same way. They don't.
 
-This project explores the opposite: a system that learns an individual's movement characteristics and adapts in real-time.
+This project explores the opposite: a system that learns *your* movement patterns and adapts to you, rather than forcing you to conform to a generic model.
 
-**Input:** Webcam  
-**Task:** Navigate a virtual space through natural body movement  
-**Comparison:** Generic model vs. personalized model
+## What if personalisation happened at the system level instead of asking users to adapt?
 
----
+For people with different motor abilities, different movement habits, or just different bodies, a one-size-fits-all gesture interface isn't helpful—it's a wall. If the system learned how *you* naturally control space, interaction becomes accessible by design, not as an afterthought.
 
-## Current Implementation
+There's something deeper here too: your movement signature is information. Individual differences should be features, not bugs.
 
-**Phase 1: Movement Capture** ✅
-- OpenCV camera acquisition
-- MediaPipe pose tracking
-- Feature extraction (normalized movement, torso position, head offset, etc.)
-- Data recording
+## What I'm Building
 
-**Phase 2: Analysis & Baseline** 🔄
-- Exploratory analysis of movement patterns
-- Baseline model development
+A real-time system that:
+- Captures movement via webcam (no special hardware needed)
+- Extracts pose features using MediaPipe
+- Learns your personal movement patterns
+- Compares personalised vs. generic models to measure the adaptation benefit
 
-**Phase 3: Personalization** 📋
-- User-specific adaptation
-- Generic vs. personalized comparison
+**Current phase:** Solid movement capture and exploratory analysis. The personalisation layer comes next—that's where the real learning happens.
 
----
+## How It Works
 
-## Getting Started
+Here's the signal flow:
+```
+Webcam → MediaPipe pose landmarks → Feature extraction 
+→ Movement dataset → Analysis & adaptive models
+```
+
+I chose pose landmarks over raw video intentionally: they're stable, they reduce noise, and they skip straight to what matters—how your body moves through space. Torso movement tells me more about navigation intent than finger flutter ever will.
+
+**Why this approach:**
+- Accessible: runs on any webcam, no depth sensors required
+- Focused: extracts just the features that matter for understanding *your* style
+- Testable: I can compare what a model learns about you vs. a generic user
+
+## What This Taught Me
+
+Building this forced me to think carefully about **what data actually reveals about movement**. It's not just coordinates—it's consistency, compensation patterns, individual quirks. Most accessible design fails because it's built on assumptions about "normal" movement, not on actual human variation.
+
+The other realisation: capturing variation is hard. You need enough data to find patterns, but also enough structure to extract meaning. That tension shaped everything.
+
+## Try It
 
 ```bash
-# Setup
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e .
 
-# Record movement
 python experiments/record_movement.py
 ```
 
-Press `ESC` to stop. Data saves to `data/movement/`.
+Press `ESC` when done. Data is saved to `data/movement/`.
 
----
-
-## Structure
+## Code
 
 ```
 src/adaptive_embodied_ai/
-├── acquisition/          # Pose tracking & camera
-├── representation/       # Feature extraction
+├── acquisition/       — Pose capture & webcam handling
+├── representation/    — Feature extraction & normalization
 └── utils/
 
-experiments/             # Data collection & training scripts
-notebooks/              # Analysis & visualization
-data/movement/          # Recorded sessions
+experiments/          — Movement recording scripts
+notebooks/           — Exploratory analysis & visualization
+data/movement/       — Your recorded sessions
 ```
 
----
-
-## Tech Stack
-- Python, OpenCV, MediaPipe
-- NumPy, Pandas (analysis)
-- PyTorch/scikit-learn (models, coming soon)
-
----
-
-## Why This Matters
-- **Accessibility:** Systems can adapt to different motor abilities
-- **Personalization:** Individual differences become features, not bugs
-- **Reproducibility:** Standard webcam, no special hardware
-
----
-
-## Author
-Athanasia Lantouri | [@lant96](https://github.com/lant96)
+**Stack:** Python · OpenCV · MediaPipe · NumPy, Pandas · PyTorch (coming next)
