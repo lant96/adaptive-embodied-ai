@@ -1,84 +1,105 @@
 # Adaptive Embodied AI
-Personalized embodied navigation through human movement.
 
-**Research Question:** Can an AI system learn how an individual controls an interaction space, adapting instead of forcing users to conform?
+Adaptive Embodied AI is a research project exploring personalised movement-based interaction. Rather than relying on fixed gesture models, the system learns how an individual user controls an interaction space and adapts accordingly.
 
----
+**Research Question**
 
-## The Idea
-
-Most gesture interfaces assume everyone moves the same way. They don't.
-
-This project explores the opposite: a system that learns an individual's movement characteristics and adapts in real-time.
-
-**Input:** Webcam  
-**Task:** Navigate a virtual space through natural body movement  
-**Comparison:** Generic model vs. personalized model
+> Can an AI system learn how an individual controls an interaction space, adapting to the user instead of forcing the user to adapt to the system?
 
 ---
 
-## Current Implementation
+## Overview
 
-**Phase 1: Movement Capture** ✅
-- OpenCV camera acquisition
-- MediaPipe pose tracking
-- Feature extraction (normalized movement, torso position, head offset, etc.)
-- Data recording
+Most gesture-based interfaces assume that people move in similar ways. In practice, movement patterns differ considerably between individuals due to physiology, habits, experience, and motor abilities.
 
-**Phase 2: Analysis & Baseline** 🔄
-- Exploratory analysis of movement patterns
-- Baseline model development
+This project investigates whether interaction systems can learn these individual characteristics and build personalised movement models that improve usability while reducing the need for predefined interaction rules.
 
-**Phase 3: Personalization** 📋
-- User-specific adaptation
-- Generic vs. personalized comparison
+The long-term goal is to develop adaptive embodied interfaces that continuously learn from user behaviour instead of relying on generic interaction models.
+
+---
+
+## Current Status
+
+### Phase 1 — Movement Capture (Complete)
+
+- Webcam acquisition using OpenCV
+- Real-time pose estimation with MediaPipe
+- Feature extraction from upper-body movement
+- Movement recording pipeline
+
+### Phase 2 — Movement Analysis (In Progress)
+
+- Exploratory data analysis
+- Baseline movement modelling
+- Feature evaluation
+
+### Phase 3 — Personalised Adaptation (Planned)
+
+- User-specific movement models
+- Generic versus personalised model comparison
+- Quantitative evaluation of interaction performance
+
+---
+
+## Project Structure
+
+```
+src/adaptive_embodied_ai/
+├── acquisition/          # Camera and pose estimation
+├── representation/       # Movement feature extraction
+└── utils/
+
+experiments/              # Recording and training scripts
+notebooks/                # Analysis and visualisation
+data/movement/            # Recorded sessions
+```
+
+---
+
+## Tech Stack
+
+- Python
+- OpenCV
+- MediaPipe
+- NumPy
+- Pandas
+- scikit-learn
+- PyTorch (planned)
 
 ---
 
 ## Getting Started
 
 ```bash
-# Setup
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e .
+```
 
-# Record movement
+Record a movement session:
+
+```bash
 python experiments/record_movement.py
 ```
 
-Press `ESC` to stop. Data saves to `data/movement/`.
+Press `ESC` to stop recording. Data will be stored in `data/movement/`.
 
 ---
 
-## Structure
+## Future Work
 
-```
-src/adaptive_embodied_ai/
-├── acquisition/          # Pose tracking & camera
-├── representation/       # Feature extraction
-└── utils/
-
-experiments/             # Data collection & training scripts
-notebooks/              # Analysis & visualization
-data/movement/          # Recorded sessions
-```
-
----
-
-## Tech Stack
-- Python, OpenCV, MediaPipe
-- NumPy, Pandas (analysis)
-- PyTorch/scikit-learn (models, coming soon)
-
----
-
-## Why This Matters
-- **Accessibility:** Systems can adapt to different motor abilities
-- **Personalization:** Individual differences become features, not bugs
-- **Reproducibility:** Standard webcam, no special hardware
+- Train personalised movement models
+- Compare personalised and generic interaction strategies
+- Evaluate adaptation across multiple users
+- Investigate accessibility-oriented interaction
+- Explore online learning for continuous personalisation
 
 ---
 
 ## Author
-Athanasia Lantouri | [@lant96](https://github.com/lant96)
+
+Athanasia Lantouri
+
+Applied Machine Learning | Human-Centered AI | Interactive Systems
+
+GitHub: https://github.com/lant96
