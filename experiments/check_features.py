@@ -1,64 +1,63 @@
+import time
+
+import cv2
+
 from adaptive_embodied_ai.acquisition.camera import Camera
 from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
-
 from adaptive_embodied_ai.representation.movement_features import (
     MovementFeatureExtractor,
 )
 
-import cv2
-
-
 
 def main():
-
     camera = Camera()
-
     tracker = PoseTracker()
-
     extractor = MovementFeatureExtractor()
 
+    extractor.reset()
 
-    print("Camera started")
+    print("Feature inspection started.")
+    print("Press ESC to stop.")
 
+    start_time = time.time()
 
-    while True:
+    try:
+        while True:
+            frame = camera.read()
 
-        frame = camera.read()
+            if frame is None:
+                break
 
-        if frame is None:
-            break
+            elapsed = time.time() - start_time
+            timestamp_ms = int(elapsed * 1000)
 
-
-        result = tracker.detect(frame)
-
-
-        if result.pose_landmarks:
-
-            landmarks = result.pose_landmarks[0]
-
-
-            features = extractor.extract(
-                landmarks
+            result = tracker.detect(
+                frame,
+                timestamp_ms,
             )
 
+            if result.pose_landmarks:
+                landmarks = result.pose_landmarks[0]
 
-            print(features)
+                features = extractor.extract(
+                    landmarks,
+                    elapsed,
+                )
 
+                if features is not None:
+                    print(features)
 
+            cv2.imshow(
+                "Feature Test",
+                frame,
+            )
 
-        cv2.imshow(
-            "Feature Test",
-            frame,
-        )
+            if cv2.waitKey(1) == 27:
+                break
 
-
-        if cv2.waitKey(1) == 27:
-            break
-
-
-    camera.release()
-    cv2.destroyAllWindows()
-
+    finally:
+        camera.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
