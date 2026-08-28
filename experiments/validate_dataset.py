@@ -7,10 +7,10 @@ import pandas as pd
 DATA_DIR = Path("data") / "movement"
 
 DATASET_FILES = [
-    "P01_session_01.csv",
-    "P01_session_02.csv",
-    "P02_session_01.csv",
-    "P02_session_02.csv",
+    "P01_S01.csv",
+    "P01_S02.csv",
+    "P02_S01.csv",
+    "P02_S02.csv",
 ]
 
 EXPECTED_MOVEMENTS = [
