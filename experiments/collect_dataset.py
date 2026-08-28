@@ -1,11 +1,8 @@
-import argparse
 import time
-from pathlib import Path
 
 import cv2
+import pandas as pd
 
-from adaptive_embodied_ai.acquisition.camera import Camera
-from adaptive_embodied_ai.acquisition.feature_recorder import FeatureRecorder
 from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
 from adaptive_embodied_ai.representation.movement_features import (
     MovementFeatureExtractor,
@@ -13,431 +10,313 @@ from adaptive_embodied_ai.representation.movement_features import (
 
 
 MOVEMENTS = [
-    ("neutral", "Stay still in a comfortable position."),
-    ("raise_arms", "Raise both arms above your head."),
-    ("lean_left", "Lean your upper body to the left."),
-    ("lean_right", "Lean your upper body to the right."),
-    ("lean_forward", "Lean your upper body forward."),
+    "neutral",
+    "raise_arms",
+    "lean_left",
+    "lean_right",
+    "lean_forward",
 ]
 
-DEFAULT_REPETITIONS = 5
-DEFAULT_DURATION = 4.0
-DEFAULT_REST = 2.0
+REPETITIONS_PER_MOVEMENT = 5
+TRIAL_DURATION = 4.0
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Collect labelled movement trials."
-    )
-
-    parser.add_argument(
-        "--participant",
-        required=True,
-        help="Participant identifier, e.g. P01",
-    )
-
-    parser.add_argument(
-        "--session",
-        required=True,
-        help="Session identifier, e.g. session_01",
-    )
-
-    parser.add_argument(
-        "--repetitions",
-        type=int,
-        default=DEFAULT_REPETITIONS,
-        help=(
-            "Number of repetitions per movement "
-            f"(default: {DEFAULT_REPETITIONS})"
-        ),
-    )
-
-    parser.add_argument(
-        "--duration",
-        type=float,
-        default=DEFAULT_DURATION,
-        help=(
-            "Recording duration per trial in seconds "
-            f"(default: {DEFAULT_DURATION})"
-        ),
-    )
-
-    parser.add_argument(
-        "--rest",
-        type=float,
-        default=DEFAULT_REST,
-        help=(
-            "Rest duration between trials in seconds "
-            f"(default: {DEFAULT_REST})"
-        ),
-    )
-
-    return parser.parse_args()
-
-
-def draw_text(frame, lines):
-    """Draw multiple lines of information on the camera frame."""
-
-    y = 35
-
-    for line in lines:
-        cv2.putText(
-            frame,
-            line,
-            (20, y),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 0, 255),
-            2,
-            cv2.LINE_AA,
-        )
-
-        y += 35
-
-
-def show_instruction(
-    camera,
-    movement_label,
-    instruction,
-    trial_number,
-):
+def draw_pose_landmarks(frame, pose_landmarks):
     """
-    Show the movement instruction until SPACE is pressed.
-
-    Returns False if ESC is pressed.
+    Draw MediaPipe pose landmarks and connections
+    using the MediaPipe Tasks API.
     """
 
-    while True:
-        frame = camera.read()
+    if not pose_landmarks:
+        return
 
-        if frame is None:
-            return False
+    # MediaPipe Tasks returns NormalizedLandmark objects.
+    height, width = frame.shape[:2]
 
-        draw_text(
+    points = []
+
+    for landmark in pose_landmarks:
+        x = int(landmark.x * width)
+        y = int(landmark.y * height)
+
+        points.append((x, y))
+
+        # Draw landmark
+        cv2.circle(
             frame,
-            [
-                f"Trial {trial_number}",
-                f"Movement: {movement_label}",
-                instruction,
-                "",
-                "Press SPACE to start",
-                "Press ESC to stop",
-            ],
+            (x, y),
+            4,
+            (0, 255, 0),
+            -1,
         )
 
-        cv2.imshow(
-            "Movement Dataset Collection",
-            frame,
-        )
+    # MediaPipe Pose landmark connections.
+    connections = [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 7),
+        (0, 4),
+        (4, 5),
+        (5, 6),
+        (6, 8),
 
-        key = cv2.waitKey(50) & 0xFF
+        # Face / head
+        (9, 10),
 
-        if key == ord(" "):
-            return True
+        # Upper body
+        (11, 12),
+        (11, 13),
+        (13, 15),
+        (12, 14),
+        (14, 16),
 
-        if key == 27:
-            return False
+        # Left side
+        (11, 23),
+        (13, 23),
+        (15, 17),
+        (15, 19),
+        (15, 21),
 
+        # Right side
+        (12, 24),
+        (14, 24),
+        (16, 18),
+        (16, 20),
+        (16, 22),
 
-def countdown(camera, seconds=3):
-    """Show a short countdown before recording."""
+        # Torso / hips
+        (23, 24),
 
-    for remaining in range(seconds, 0, -1):
-        start = time.time()
+        # Left leg
+        (23, 25),
+        (25, 27),
+        (27, 29),
+        (29, 31),
 
-        while time.time() - start < 1.0:
-            frame = camera.read()
+        # Right leg
+        (24, 26),
+        (26, 28),
+        (28, 30),
+        (30, 32),
+    ]
 
-            if frame is None:
-                return False
-
-            draw_text(
+    for start_idx, end_idx in connections:
+        if (
+            start_idx < len(points)
+            and end_idx < len(points)
+        ):
+            cv2.line(
                 frame,
-                [
-                    "Get ready...",
-                    f"Starting in {remaining}",
-                ],
+                points[start_idx],
+                points[end_idx],
+                (0, 255, 0),
+                2,
             )
-
-            cv2.imshow(
-                "Movement Dataset Collection",
-                frame,
-            )
-
-            key = cv2.waitKey(30) & 0xFF
-
-            if key == 27:
-                return False
-
-    return True
 
 
 def record_trial(
-    camera,
     tracker,
     extractor,
-    recorder,
+    movement_label,
     participant_id,
     session_id,
     trial_id,
-    movement_label,
-    duration,
     session_start_time,
 ):
-    """
-    Record one labelled movement trial.
-
-    MediaPipe receives a session-level timestamp so that timestamps
-    remain monotonically increasing across all trials.
-
-    The saved CSV timestamp remains relative to the current trial.
-    """
-
     extractor.reset()
 
-    trial_start_time = time.time()
+    cap = cv2.VideoCapture(0)
 
-    while True:
-        frame = camera.read()
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam.")
 
-        if frame is None:
-            return False
+    print()
+    print(f"Movement: {movement_label}")
+    print(f"Trial: {trial_id}")
+    print("Get ready...")
 
-        trial_elapsed = time.time() - trial_start_time
-        session_elapsed = time.time() - session_start_time
+    time.sleep(2)
 
-        if trial_elapsed >= duration:
-            break
+    print("Recording...")
 
-        # MediaPipe requires monotonically increasing timestamps
-        # across the lifetime of the video detector.
-        timestamp_ms = int(session_elapsed * 1000)
+    rows = []
 
-        result = tracker.detect(
-            frame,
-            timestamp_ms,
-        )
+    trial_start_time = time.perf_counter()
 
-        if result.pose_landmarks:
-            landmarks = result.pose_landmarks[0]
+    try:
+        while True:
+            success, frame = cap.read()
 
-            features = extractor.extract(
-                landmarks,
-                trial_elapsed,
+            if not success:
+                print("Failed to read frame from webcam.")
+                break
+
+            trial_elapsed = time.perf_counter() - trial_start_time
+
+            if trial_elapsed >= TRIAL_DURATION:
+                break
+
+            # Global timestamp for MediaPipe.
+            session_elapsed = (
+                time.perf_counter() - session_start_time
+            )
+            timestamp_ms = int(session_elapsed * 1000)
+
+            result = tracker.detect(
+                frame,
+                timestamp_ms,
             )
 
-            if features is not None:
-                recorder.record(
-                    trial_elapsed,
-                    {
+            # Draw detected pose landmarks
+            if result.pose_landmarks:
+                for landmark in result.pose_landmarks[0]:
+                    x = int(landmark.x * frame.shape[1])
+                    y = int(landmark.y * frame.shape[0])
+
+                    cv2.circle(
+                        frame,
+                        (x, y),
+                        4,
+                        (0, 255, 0),
+                        -1,
+                    )
+
+            # Extract movement features
+            if (
+                result.pose_landmarks
+                and result.pose_world_landmarks
+            ):
+                landmarks = result.pose_landmarks[0]
+                world_landmarks = result.pose_world_landmarks[0]
+
+                features = extractor.extract(
+                    landmarks=landmarks,
+                    world_landmarks=world_landmarks,
+                    timestamp=trial_elapsed,
+                )
+
+                if features is not None:
+                    row = {
                         "participant_id": participant_id,
                         "session_id": session_id,
                         "trial_id": trial_id,
                         "movement_label": movement_label,
+                        "timestamp": trial_elapsed,
                         **features,
-                    },
-                )
+                    }
 
-        draw_text(
-            frame,
-            [
-                f"Recording: {movement_label}",
-                f"Time: {trial_elapsed:.1f} / {duration:.1f}s",
-                "Press ESC to stop",
-            ],
-        )
+                    rows.append(row)
 
-        cv2.imshow(
-            "Movement Dataset Collection",
-            frame,
-        )
+            cv2.imshow(
+                "Adaptive Embodied AI — Dataset Collection",
+                frame,
+            )
 
-        key = cv2.waitKey(1) & 0xFF
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                raise KeyboardInterrupt
 
-        if key == 27:
-            return False
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
 
-    return True
+    print(f"Collected {len(rows)} frames.")
 
-
-def rest_period(camera, seconds):
-    """Provide a short rest period between trials."""
-
-    start = time.time()
-
-    while time.time() - start < seconds:
-        frame = camera.read()
-
-        if frame is None:
-            return False
-
-        remaining = seconds - (time.time() - start)
-
-        draw_text(
-            frame,
-            [
-                "Rest",
-                f"Next trial in {max(0, remaining):.1f}s",
-            ],
-        )
-
-        cv2.imshow(
-            "Movement Dataset Collection",
-            frame,
-        )
-
-        key = cv2.waitKey(30) & 0xFF
-
-        if key == 27:
-            return False
-
-    return True
+    return rows
 
 
 def main():
-    args = parse_args()
+    participant_id = input("Participant ID: ").strip()
+    session_id = input("Session ID: ").strip()
 
-    if args.repetitions <= 0:
+    if not participant_id:
         raise ValueError(
-            "Repetitions must be greater than zero."
+            "Participant ID cannot be empty."
         )
 
-    if args.duration <= 0:
+    if not session_id:
         raise ValueError(
-            "Duration must be greater than zero."
+            "Session ID cannot be empty."
         )
 
-    if args.rest < 0:
-        raise ValueError(
-            "Rest duration cannot be negative."
-        )
+    from adaptive_embodied_ai.utils.paths import MOVEMENT_DATA_DIR
 
-    output_directory = Path("data") / "movement"
-    output_directory.mkdir(
+    MOVEMENT_DATA_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    output_file = (
-        output_directory
-        / f"{args.participant}_{args.session}.csv"
-    )
-
-    if output_file.exists():
-        raise FileExistsError(
-            f"\nDataset already exists:\n"
-            f"  {output_file}\n\n"
-            "The collector will not overwrite existing data. "
-            "Rename or remove the existing file if you intend "
-            "to record this session again."
-        )
-
-    camera = Camera()
     tracker = PoseTracker()
     extractor = MovementFeatureExtractor()
 
-    trial_number = 0
+    all_rows = []
 
-    # MediaPipe's video detector requires timestamps that continuously
-    # increase throughout the lifetime of the tracker.
-    session_start_time = time.time()
+    trial_id = 1
+
+    session_start_time = time.perf_counter()
 
     try:
-        print()
-        print("=" * 60)
-        print("Movement Dataset Collection")
-        print("=" * 60)
-        print(f"Participant : {args.participant}")
-        print(f"Session     : {args.session}")
-        print(f"Repetitions : {args.repetitions}")
-        print(f"Duration    : {args.duration}s")
-        print(f"Rest        : {args.rest}s")
-        print(f"Output      : {output_file}")
-        print("=" * 60)
-        print()
-        print(
-            "Follow the instructions shown in the camera window."
+        for movement in MOVEMENTS:
+            for repetition in range(
+                1,
+                REPETITIONS_PER_MOVEMENT + 1,
+            ):
+                print()
+                print("=" * 60)
+                print(
+                    f"{movement} — "
+                    f"repetition {repetition}/"
+                    f"{REPETITIONS_PER_MOVEMENT}"
+                )
+                print("=" * 60)
+
+                rows = record_trial(
+                    tracker=tracker,
+                    extractor=extractor,
+                    movement_label=movement,
+                    participant_id=participant_id,
+                    session_id=session_id,
+                    trial_id=trial_id,
+                    session_start_time=session_start_time,
+                )
+
+                all_rows.extend(rows)
+
+                trial_id += 1
+
+                print("Trial complete.")
+
+    except KeyboardInterrupt:
+        print("\nDataset collection interrupted.")
+
+    if not all_rows:
+        raise RuntimeError(
+            "No movement data were collected."
         )
-        print("Press SPACE to begin each trial.")
-        print("Press ESC at any time to stop.")
-        print()
 
-        with FeatureRecorder(output_file) as recorder:
+    df = pd.DataFrame(all_rows)
 
-            for movement_label, instruction in MOVEMENTS:
+    output_path = (
+        MOVEMENT_DATA_DIR
+        / f"{participant_id}_{session_id}.csv"
+    )
 
-                for repetition in range(
-                    1,
-                    args.repetitions + 1,
-                ):
-                    trial_number += 1
+    df.to_csv(
+        output_path,
+        index=False,
+    )
 
-                    trial_id = f"{trial_number:03d}"
-
-                    print(
-                        f"Preparing trial {trial_id}: "
-                        f"{movement_label} "
-                        f"(repetition {repetition}/"
-                        f"{args.repetitions})"
-                    )
-
-                    started = show_instruction(
-                        camera,
-                        movement_label,
-                        instruction,
-                        trial_number,
-                    )
-
-                    if not started:
-                        print("Collection stopped.")
-                        return
-
-                    if not countdown(camera):
-                        print("Collection stopped.")
-                        return
-
-                    print(
-                        f"Recording trial {trial_id}..."
-                    )
-
-                    success = record_trial(
-                        camera=camera,
-                        tracker=tracker,
-                        extractor=extractor,
-                        recorder=recorder,
-                        participant_id=args.participant,
-                        session_id=args.session,
-                        trial_id=trial_id,
-                        movement_label=movement_label,
-                        duration=args.duration,
-                        session_start_time=session_start_time,
-                    )
-
-                    if not success:
-                        print("Collection stopped.")
-                        return
-
-                    print(
-                        f"Trial {trial_id} completed."
-                    )
-
-                    if not rest_period(
-                        camera,
-                        args.rest,
-                    ):
-                        print("Collection stopped.")
-                        return
-
-        print()
-        print("=" * 60)
-        print("Dataset collection completed.")
-        print(f"Trials recorded: {trial_number}")
-        print(f"Saved to: {output_file}")
-        print("=" * 60)
-
-    finally:
-        camera.release()
-        cv2.destroyAllWindows()
+    print()
+    print("=" * 60)
+    print("Dataset saved")
+    print("=" * 60)
+    print(f"File: {output_path}")
+    print(f"Rows: {len(df)}")
+    print(f"Trials: {df['trial_id'].nunique()}")
+    print(
+        f"Movements: "
+        f"{df['movement_label'].nunique()}"
+    )
 
 
 if __name__ == "__main__":

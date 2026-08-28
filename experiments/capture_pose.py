@@ -1,61 +1,70 @@
 import time
 
-from adaptive_embodied_ai.acquisition.camera import Camera
-from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
-
-from adaptive_embodied_ai.representation.movement_features import (
-    MovementFeatureExtractor,
-)
-
 import cv2
+
+from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
 
 
 def main():
-
-    camera = Camera()
     tracker = PoseTracker()
-    extractor = MovementFeatureExtractor()
 
-    print("Camera started")
+    cap = cv2.VideoCapture(0)
 
-    start_time = time.time()
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam.")
 
-    while True:
+    print("Press Q to quit.")
 
-        frame = camera.read()
+    start_time = time.perf_counter()
 
-        if frame is None:
-            break
+    try:
+        while True:
+            success, frame = cap.read()
 
-        elapsed = time.time() - start_time
-        timestamp_ms = int(elapsed * 1000)
+            if not success:
+                print("Failed to read frame from webcam.")
+                break
 
-        result = tracker.detect(frame, timestamp_ms)
+            elapsed = time.perf_counter() - start_time
+            timestamp_ms = int(elapsed * 1000)
 
-        if result.pose_landmarks:
-
-            landmarks = result.pose_landmarks[0]
-
-            features = extractor.extract(
-                landmarks,
-                elapsed,
+            result = tracker.detect(
+                frame,
+                timestamp_ms,
             )
 
-            if features is not None:
-                print(features)
-            else:
-                print("Low-confidence landmarks, skipped frame")
+            display_frame = frame.copy()
 
-        cv2.imshow(
-            "Feature Test",
-            frame,
-        )
+            if result.pose_landmarks:
+                landmarks = result.pose_landmarks[0]
 
-        if cv2.waitKey(1) == 27:
-            break
+                height, width = display_frame.shape[:2]
 
-    camera.release()
-    cv2.destroyAllWindows()
+                for landmark in landmarks:
+                    x = int(landmark.x * width)
+                    y = int(landmark.y * height)
+
+                    cv2.circle(
+                        display_frame,
+                        (x, y),
+                        3,
+                        (0, 255, 0),
+                        -1,
+                    )
+
+            cv2.imshow(
+                "Adaptive Embodied AI — Pose",
+                display_frame,
+            )
+
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord("q"):
+                break
+
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

@@ -1,94 +1,69 @@
-import argparse
 import time
 
 import cv2
 
-from adaptive_embodied_ai.acquisition.camera import Camera
 from adaptive_embodied_ai.acquisition.pose_tracker import PoseTracker
-from adaptive_embodied_ai.acquisition.feature_recorder import FeatureRecorder
 from adaptive_embodied_ai.representation.movement_features import (
     MovementFeatureExtractor,
 )
 
 
-DEFAULT_OUTPUT_FILE = "data/movement/session_01.csv"
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Record movement features from a webcam."
-    )
-
-    parser.add_argument(
-        "--output",
-        default=DEFAULT_OUTPUT_FILE,
-        help=(
-            "Output CSV path "
-            "(default: data/movement/session_01.csv)"
-        ),
-    )
-
-    return parser.parse_args()
-
-
 def main():
-    args = parse_args()
-
-    camera = Camera()
     tracker = PoseTracker()
     extractor = MovementFeatureExtractor()
 
-    extractor.reset()
+    cap = cv2.VideoCapture(0)
 
-    print(f"Recording to: {args.output}")
-    print("Recording started.")
-    print("Press ESC to stop.")
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam.")
 
-    start_time = time.time()
+    print("Recording movement.")
+    print("Press Q to quit.")
+
+    start_time = time.perf_counter()
 
     try:
-        with FeatureRecorder(args.output) as recorder:
-            while True:
-                frame = camera.read()
+        while True:
+            success, frame = cap.read()
 
-                if frame is None:
-                    break
+            if not success:
+                print("Failed to read frame from webcam.")
+                break
 
-                elapsed = time.time() - start_time
-                timestamp_ms = int(elapsed * 1000)
+            elapsed = time.perf_counter() - start_time
+            timestamp_ms = int(elapsed * 1000)
 
-                result = tracker.detect(
-                    frame,
-                    timestamp_ms,
+            result = tracker.detect(
+                frame,
+                timestamp_ms,
+            )
+
+            if result.pose_landmarks and result.pose_world_landmarks:
+                landmarks = result.pose_landmarks[0]
+                world_landmarks = result.pose_world_landmarks[0]
+
+                features = extractor.extract(
+                    landmarks=landmarks,
+                    world_landmarks=world_landmarks,
+                    timestamp=elapsed,
                 )
 
-                if result.pose_landmarks:
-                    landmarks = result.pose_landmarks[0]
+                if features is not None:
+                    print(features)
 
-                    features = extractor.extract(
-                        landmarks,
-                        elapsed,
-                    )
+            cv2.imshow(
+                "Adaptive Embodied AI — Movement Recording",
+                frame,
+            )
 
-                    if features is not None:
-                        recorder.record(
-                            elapsed,
-                            features,
-                        )
+            key = cv2.waitKey(1) & 0xFF
 
-                cv2.imshow(
-                    "Movement Recorder",
-                    frame,
-                )
-
-                if cv2.waitKey(1) == 27:
-                    break
+            if key == ord("q"):
+                break
 
     finally:
-        camera.release()
+        cap.release()
         cv2.destroyAllWindows()
-
-    print(f"Recording saved to: {args.output}")
 
 
 if __name__ == "__main__":
