@@ -1,9 +1,0 @@
-numpy
-opencv-python
-mediapipe
-scikit-learn
-matplotlib
-pandas
-pyyaml
-pytest
-ruff

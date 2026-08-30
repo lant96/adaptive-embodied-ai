@@ -8,6 +8,21 @@ name = "adaptive-embodied-ai"
 version = "0.1.0"
 description = "Research prototype for adaptive embodied AI systems"
 requires-python = ">=3.13"
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "mediapipe",
+    "scikit-learn",
+    "matplotlib",
+    "pandas",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
 
 
 [tool.setuptools.packages.find]
