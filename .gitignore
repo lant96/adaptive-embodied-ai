@@ -6,13 +6,13 @@ __pycache__/
 # Environment
 .venv/
 
-# Data
-data/raw/*
-data/processed/*
-
 # IDE
 .vscode/
 .idea/
 
 # OS
 .DS_Store
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
